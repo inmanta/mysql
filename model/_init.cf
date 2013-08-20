@@ -1,0 +1,63 @@
+"""
+    Copyright 2013 KU Leuven Research and Development - iMinds - Distrinet
+
+    Licensed under the Apache License, Version 2.0 (the "License");
+    you may not use this file except in compliance with the License.
+    You may obtain a copy of the License at
+
+        http://www.apache.org/licenses/LICENSE-2.0
+
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and 
+    limitations under the License.
+
+    Administrative Contact: dnet-project-office@cs.kuleuven.be
+    Technical Contact: bart.vanbrabant@cs.kuleuven.be
+"""
+
+entity MysqlServer extends ip::services::Server:
+    """
+        Mysql server configuration
+    """
+end
+
+entity Database:
+    string name
+    string user
+    string password
+end
+
+implement Database using std::none
+
+MysqlServer server [1] -- [0:] Database databases
+
+typedef Server as MysqlServer(services = mysql::s_server)
+
+implement MysqlServer using mysql
+
+implementation mysql:
+    # install mysql server
+    pkg = std::Package(host = host, name = "mysql-server", state = "installed")
+    svc = std::Service(host = host, name = "mysqld", state = "running", onboot = true)
+    svc.requires = [pkg, config]
+    
+    config = std::ConfigFile(host = host, path = "/etc/my.cnf", content = template("mysql/my.cnf.tmpl"))
+    
+    dblist = std::ConfigFile(host = host, path = "/etc/sysconfig/mysql", 
+        content = template("mysql/databases.tmpl"))
+    dblist.provides = svc
+
+    # install mysql db create script
+    unit_file = std::File(host = host, path = "/lib/systemd/system/mysql_create_db.service", owner = "root",
+        group = "root", mode = 644, requires = script_file, content = file("mysql/mysql_create_db.service"))
+    script_file = std::File(host = host, path = "/usr/bin/mysql_create_db", owner = "root", group = "root",
+        mode = 755, content = file("mysql/mysql_create_db"))
+    svc_file = std::Service(host = host, name = "mysql_create_db", state = "running", onboot = true)
+
+end
+
+mysql_server_range = ip::Port(low = 3306)
+s_server = ip::DstService(proto = "tcp", dst_range = mysql_server_range)
+
