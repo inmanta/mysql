@@ -11,7 +11,7 @@ old_passwords=1
 # symbolic-links=0
 max_connections=350
 
-bind-address = {{ host.ip | cm("listen ip", "host") }}
+bind-address = 0.0.0.0
 
 [mysqld_safe]
 log-error=/var/log/mysqld.log
