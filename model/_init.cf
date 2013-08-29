@@ -35,7 +35,12 @@ MysqlServer server [1] -- [0:] Database databases
 
 typedef Server as MysqlServer(services = mysql::s_server)
 
+mysql_server_range = ip::Port(low = 3306)
+s_server = ip::DstService(proto = "tcp", dst_range = mysql_server_range)
+
 implement MysqlServer using mysql
+implement MysqlServer using systemdCreate when os is "fedora"
+implement MysqlServer using sysvCreate when os is "centos"
 
 implementation mysql:
     # install mysql server
@@ -48,16 +53,21 @@ implementation mysql:
     dblist = std::ConfigFile(host = host, path = "/etc/sysconfig/mysql", 
         content = template("mysql/databases.tmpl"))
     dblist.provides = svc
+end
 
+implementation systemdCreate:
     # install mysql db create script
     unit_file = std::File(host = host, path = "/lib/systemd/system/mysql_create_db.service", owner = "root",
         group = "root", mode = 644, requires = script_file, content = file("mysql/mysql_create_db.service"))
     script_file = std::File(host = host, path = "/usr/bin/mysql_create_db", owner = "root", group = "root",
         mode = 755, content = file("mysql/mysql_create_db"))
-    svc_file = std::Service(host = host, name = "mysql_create_db", state = "running", onboot = true, requires = unit_file)
-
+    svc_file = std::Service(host = host, name = "mysql_create_db", state = "running", onboot = true)
 end
 
-mysql_server_range = ip::Port(low = 3306)
-s_server = ip::DstService(proto = "tcp", dst_range = mysql_server_range)
+implementation sysvCreate:
+    mysqld_config = std::ConfigFile(host = host, path = "/etc/sysconfig/mysqld", content = file("mysql/mysqld_sysconfig"))    
+    script_file = std::File(host = host, path = "/usr/bin/mysql_create_db", owner = "root", group = "root",
+        mode = 755, content = file("mysql/mysql_create_db"))
+end
+
 
