@@ -59,9 +59,12 @@ implementation systemdCreate:
     # install mysql db create script
     unit_file = std::File(host = host, path = "/lib/systemd/system/mysql_create_db.service", owner = "root",
         group = "root", mode = 644, requires = script_file, content = file("mysql/mysql_create_db.service"))
+
     script_file = std::File(host = host, path = "/usr/bin/mysql_create_db", owner = "root", group = "root",
         mode = 755, content = file("mysql/mysql_create_db"))
-    svc_file = std::Service(host = host, name = "mysql_create_db", state = "running", onboot = true)
+
+    svc_file = std::Service(host = host, name = "mysql_create_db", state = "running", onboot = true,
+        requires = [unit_file, script_file])
 end
 
 implementation sysvCreate:
