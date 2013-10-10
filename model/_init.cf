@@ -39,8 +39,8 @@ mysql_server_range = ip::Port(low = 3306)
 s_server = ip::DstService(proto = "tcp", dst_range = mysql_server_range)
 
 implement MysqlServer using mysql
-implement MysqlServer using systemdCreate when os is "fedora"
-implement MysqlServer using sysvCreate when os is "centos"
+implement MysqlServer using systemdCreate when host.os is "fedora"
+implement MysqlServer using sysvCreate when host.os is "centos"
 
 implementation mysql:
     # install mysql server
