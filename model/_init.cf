@@ -10,7 +10,7 @@
     Unless required by applicable law or agreed to in writing, software
     distributed under the License is distributed on an "AS IS" BASIS,
     WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-    See the License for the specific language governing permissions and 
+    See the License for the specific language governing permissions and
     limitations under the License.
 
     Administrative Contact: dnet-project-office@cs.kuleuven.be
@@ -47,12 +47,11 @@ implementation mysql:
     pkg = std::Package(host = host, name = "mysql-server", state = "installed")
     svc = std::Service(host = host, name = "mysqld", state = "running", onboot = true)
     svc.requires = [pkg, config]
-    
-    config = std::ConfigFile(host = host, path = "/etc/my.cnf", content = template("mysql/my.cnf.tmpl"))
-    
-    dblist = std::ConfigFile(host = host, path = "/etc/sysconfig/mysql", 
+
+    config = std::ConfigFile(host = host, path = "/etc/my.cnf", content = template("mysql/my.cnf.tmpl"), requires = pkg, reload = true)
+
+    dblist = std::ConfigFile(host = host, path = "/etc/sysconfig/mysql", reload = true,
         content = template("mysql/databases.tmpl"))
-    dblist.provides = svc
 end
 
 implementation systemdCreate:
@@ -64,11 +63,11 @@ implementation systemdCreate:
         mode = 755, content = file("mysql/mysql_create_db"))
 
     svc_file = std::Service(host = host, name = "mysql_create_db", state = "running", onboot = true,
-        requires = [unit_file, script_file])
+        requires = [unit_file, script_file, std::File[host = self.host, path = "/etc/sysconfig/mysql"]])
 end
 
 implementation sysvCreate:
-    mysqld_config = std::ConfigFile(host = host, path = "/etc/sysconfig/mysqld", content = file("mysql/mysqld_sysconfig"))    
+    mysqld_config = std::ConfigFile(host = host, path = "/etc/sysconfig/mysqld", content = file("mysql/mysqld_sysconfig"))
     script_file = std::File(host = host, path = "/usr/bin/mysql_create_db", owner = "root", group = "root",
         mode = 755, content = file("mysql/mysql_create_db"))
 end
