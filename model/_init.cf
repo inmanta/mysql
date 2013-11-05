@@ -46,9 +46,10 @@ implementation mysql:
     # install mysql server
     pkg = std::Package(host = host, name = "mysql-server", state = "installed")
     svc = std::Service(host = host, name = "mysqld", state = "running", onboot = true)
-    svc.requires = [pkg, config]
+    svc.requires = [pkg, config, conf_dir]
 
     config = std::ConfigFile(host = host, path = "/etc/my.cnf", content = template("mysql/my.cnf.tmpl"), requires = pkg, reload = true)
+    conf_dir = std::Directory(host = host, path = "/etc/mysql.conf.d", owner = "root", group = "root", mode = 755)
 
     dblist = std::ConfigFile(host = host, path = "/etc/sysconfig/mysql", reload = true,
         content = template("mysql/databases.tmpl"))
