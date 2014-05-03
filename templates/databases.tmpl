@@ -1,3 +1,3 @@
-{% for db in databases %}
+{% for db in databases | key_sort("name") %}
 hasdb {{ db.name }} {{ db.user }} {{ db.password }}
 {% endfor %}
