@@ -49,20 +49,20 @@ implementation mysqlRedhat for MysqlServer:
     svc = std::Service(host = host, name = "mysqld", state = "running", onboot = true)
     svc.requires = [pkg, config, conf_dir]
 
-    config = std::ConfigFile(host = host, path = "/etc/my.cnf", content = template("mysql/my.cnf.tmpl"), requires = pkg, reload = true)
+    config = std::ConfigFile(host = host, path = "/etc/my.cnf", content = std::template("mysql/my.cnf.tmpl"), requires = pkg, reload = true)
     conf_dir = std::Directory(host = host, path = "/etc/mysql.conf.d", owner = "root", group = "root", mode = 755)
 
     dblist = std::ConfigFile(host = host, path = "/etc/sysconfig/mysql", reload = true,
-        content = template("mysql/databases.tmpl"))
+        content = std::template("mysql/databases.tmpl"))
 end
 
 implementation systemdCreate for MysqlServer:
     # install mysql db create script
     unit_file = std::File(host = host, path = "/lib/systemd/system/mysql_create_db.service", owner = "root",
-        group = "root", mode = 644, requires = script_file, content = file("mysql/mysql_create_db.service"))
+        group = "root", mode = 644, requires = script_file, content = std::file("mysql/mysql_create_db.service"))
 
     script_file = std::File(host = host, path = "/usr/bin/mysql_create_db", owner = "root", group = "root",
-        mode = 755, content = file("mysql/redhat_mysql_create_db"))
+        mode = 755, content = std::file("mysql/redhat_mysql_create_db"))
 
     db_file = std::File[host = self.host, path = "/etc/sysconfig/mysql"]
     svc_file = std::Service(host = host, name = "mysql_create_db", state = "running", onboot = true,
