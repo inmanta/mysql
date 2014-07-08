@@ -70,9 +70,9 @@ implementation systemdCreate for MysqlServer:
 end
 
 implementation sysvCreate for MysqlServer:
-    mysqld_config = std::ConfigFile(host = host, path = "/etc/sysconfig/mysqld", content = file("mysql/mysqld_sysconfig"))
+    mysqld_config = std::ConfigFile(host = host, path = "/etc/sysconfig/mysqld", content = std::file("mysql/mysqld_sysconfig"))
     script_file = std::File(host = host, path = "/usr/bin/mysql_create_db", owner = "root", group = "root",
-        mode = 755, content = file("mysql/redhat_mysql_create_db"))
+        mode = 755, content = std::file("mysql/redhat_mysql_create_db"))
 end
 
 implementation ubuntuMysql for MysqlServer:
@@ -81,14 +81,14 @@ implementation ubuntuMysql for MysqlServer:
     svc = std::Service(host = host, name = "mysql", state = "running", onboot = true)
     svc.requires = [pkg, config, conf_dir]
 
-    config = std::ConfigFile(host = host, path = "/etc/mysql/my.cnf", content = template("mysql/my.cnf.ubuntu.tmpl"), requires = pkg, reload = true)
+    config = std::ConfigFile(host = host, path = "/etc/mysql/my.cnf", content = std::template("mysql/my.cnf.ubuntu.tmpl"), requires = pkg, reload = true)
     conf_dir = std::Directory(host = host, path = "/etc/mysql/conf.d", owner = "root", group = "root", mode = 755)
 
     dblist = std::ConfigFile(host = host, path = "/etc/mysql/databases", reload = true,
-        content = template("mysql/databases.tmpl"))
+        content = std::template("mysql/databases.tmpl"))
 
     script_file = std::File(host = host, path = "/usr/bin/mysql_create_db", owner = "root", group = "root",
-        mode = 755, content = file("mysql/ubuntu_mysql_create_db"))
+        mode = 755, content = std::file("mysql/ubuntu_mysql_create_db"))
 
     exec::Run(host = host, command = "/usr/bin/mysql_create_db", requires = [dblist, script_file], reload_only = true)
 end
