@@ -38,7 +38,8 @@ typedef Server as MysqlServer(services = mysql::s_server)
 mysql_server_range = ip::Port(low = 3306)
 s_server = ip::DstService(proto = "tcp", dst_range = mysql_server_range)
 
-implement MysqlServer using mysqlRedhat when host.os is "redhat"
+implement MysqlServer using mysqlRedhat when host.os is "centos"
+implement MysqlServer using mysqlMariaDB when host.os is "fedora"
 implement MysqlServer using systemdCreate when host.os is "fedora"
 implement MysqlServer using sysvCreate when host.os is "centos"
 implement MysqlServer using ubuntuMysql when host.os is "ubuntu"
@@ -51,6 +52,19 @@ implementation mysqlRedhat for MysqlServer:
 
     config = std::ConfigFile(host = host, path = "/etc/my.cnf", content = std::template("mysql/my.cnf.tmpl"), requires = pkg, reload = true)
     conf_dir = std::Directory(host = host, path = "/etc/mysql.conf.d", owner = "root", group = "root", mode = 755)
+
+    dblist = std::ConfigFile(host = host, path = "/etc/sysconfig/mysql", reload = true,
+        content = std::template("mysql/databases.tmpl"))
+end
+
+implementation mysqlMariaDB for MysqlServer:
+    # install mysql server
+    pkg = std::Package(host = host, name = "mariadb-galera-server", state = "installed")
+    svc = std::Service(host = host, name = "mariadb", state = "running", onboot = true)
+    svc.requires = [pkg, config, conf_dir]
+
+    config = std::ConfigFile(host = host, path = "/etc/my.cnf", content = std::template("mysql/mariadb.cnf.tmpl"), requires = pkg, reload = true)
+    conf_dir = std::Directory(host = host, path = "/etc/my.cnf.d", owner = "root", group = "root", mode = 755)
 
     dblist = std::ConfigFile(host = host, path = "/etc/sysconfig/mysql", reload = true,
         content = std::template("mysql/databases.tmpl"))
