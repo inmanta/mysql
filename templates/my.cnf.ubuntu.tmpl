@@ -21,7 +21,6 @@ tmpdir          = /tmp
 lc-messages-dir = /usr/share/mysql
 skip-external-locking
 
-bind-address = 0.0.0.0
 
 #
 # * Fine Tuning
@@ -32,8 +31,8 @@ thread_stack            = 192K
 thread_cache_size       = 8
 # This replaces the startup script and checks MyISAM tables if needed
 # the first time they are touched
-myisam-recover         = BACKUP
-#max_connections        = 100
+myisam-recover          = BACKUP
+max_connections         = 500
 #table_cache            = 64
 #thread_concurrency     = 10
 #
@@ -104,3 +103,4 @@ key_buffer              = 16M
 #   The files must end with '.cnf', otherwise they'll be ignored.
 #
 !includedir /etc/mysql/conf.d/
+
