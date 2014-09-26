@@ -76,7 +76,7 @@ implementation systemdCreate for MysqlServer:
 
     db_file = std::File[host = self.host, path = "/etc/sysconfig/mysql"]
 
-    exec::Run(host = host, command = "/usr/bin/mysql_create_db", requires = [dblist, script_file], reload_only = true)
+    exec::Run(host = host, command = "/usr/bin/mysql_create_db", requires = [db_file, script_file], reload_only = true)
 end
 
 implementation sysvCreate for MysqlServer:
