@@ -1,5 +1,5 @@
 """
-    Copyright 2013 KU Leuven Research and Development - iMinds - Distrinet
+    Copyright 2014 KU Leuven Research and Development - iMinds - Distrinet
 
     Licensed under the Apache License, Version 2.0 (the "License");
     you may not use this file except in compliance with the License.
@@ -33,72 +33,67 @@ implement Database using std::none
 
 MysqlServer server [1] -- [0:] Database databases
 
-typedef Server as MysqlServer(services = mysql::s_server)
+typedef Server as MysqlServer(services=mysql::s_server)
 
-mysql_server_range = ip::Port(low = 3306)
-s_server = ip::DstService(proto = "tcp", dst_range = mysql_server_range)
+mysql_server_range=ip::Port(low=3306)
+s_server=ip::DstService(proto="tcp", dst_range=mysql_server_range)
 
 implement MysqlServer using mysqlRedhat when std::familyof(host.os, "rhel") and host.os.version <= 6
 implement MysqlServer using mysqlMariaDB when (std::familyof(host.os, "rhel") and host.os.version >= 7) or std::familyof(host.os, "fedora")
-implement MysqlServer using systemdCreate when (std::familyof(host.os, "rhel") and host.os.version >= 7) or std::familyof(host.os, "fedora")
 implement MysqlServer using sysvCreate when std::familyof(host.os, "rhel") and host.os.version <= 6
 implement MysqlServer using ubuntuMysql when std::familyof(host.os, "ubuntu")
 
 implementation mysqlRedhat for MysqlServer:
     # install mysql server
-    pkg = std::Package(host = host, name = "mysql-server", state = "installed")
-    svc = std::Service(host = host, name = "mysqld", state = "running", onboot = true)
-    svc.requires = [pkg, config, conf_dir]
+    pkg=std::Package(host=host, name="mysql-server", state="installed")
+    svc=std::Service(host=host, name="mysqld", state="running", onboot=true)
+    svc.requires=[pkg, config, conf_dir]
 
-    config = std::ConfigFile(host = host, path = "/etc/my.cnf", content = std::template("mysql/my.cnf.tmpl"), requires = pkg, reload = true)
-    conf_dir = std::Directory(host = host, path = "/etc/mysql.conf.d", owner = "root", group = "root", mode = 755)
+    config=std::ConfigFile(host=host, path="/etc/my.cnf", content=std::template("mysql/my.cnf.tmpl"), requires=pkg, reload=true)
+    conf_dir=std::Directory(host=host, path="/etc/mysql.conf.d", owner="root", group="root", mode=755)
 
-    dblist = std::ConfigFile(host = host, path = "/etc/sysconfig/mysql", reload = true,
-        content = std::template("mysql/databases.tmpl"))
+    dblist=std::ConfigFile(host=host, path="/etc/sysconfig/mysql", reload=true,
+        content=std::template("mysql/databases.tmpl"))
 end
 
 implementation mysqlMariaDB for MysqlServer:
     # install mysql server
-    pkg = std::Package(host = host, name = "mariadb-galera-server", state = "installed")
-    svc = std::Service(host = host, name = "mariadb", state = "running", onboot = true)
-    svc.requires = [pkg, config, conf_dir]
+    pkg=std::Package(host=host, name="mariadb-galera-server", state="installed")
+    svc=std::Service(host=host, name="mariadb", state="running", onboot=true)
+    svc.requires=[pkg, config, conf_dir]
 
-    config = std::ConfigFile(host = host, path = "/etc/my.cnf", content = std::template("mysql/mariadb.cnf.tmpl"), requires = pkg, reload = true)
-    conf_dir = std::Directory(host = host, path = "/etc/my.cnf.d", owner = "root", group = "root", mode = 755)
+    config=std::ConfigFile(host=host, path="/etc/my.cnf", content=std::template("mysql/mariadb.cnf.tmpl"), requires=pkg, reload=true)
+    conf_dir=std::Directory(host=host, path="/etc/my.cnf.d", owner="root", group="root", mode=755)
 
-    dblist = std::ConfigFile(host = host, path = "/etc/sysconfig/mysql", reload = true,
-        content = std::template("mysql/databases.tmpl"))
-end
+    dblist=std::ConfigFile(host=host, path="/etc/sysconfig/mysql", reload=true,
+        content=std::template("mysql/databases.tmpl"))
 
-implementation systemdCreate for MysqlServer:
-    script_file = std::File(host = host, path = "/usr/bin/mysql_create_db", owner = "root", group = "root",
-        mode = 755, content = std::file("mysql/redhat_mysql_create_db"))
+    script_file=std::File(host=host, path="/usr/bin/mysql_create_db", owner="root", group="root",
+        mode=755, content=std::file("mysql/redhat_mysql_create_db"))
 
-    db_file = std::File[host = self.host, path = "/etc/sysconfig/mysql"]
-
-    exec::Run(host = host, command = "/usr/bin/mysql_create_db", requires = [db_file, script_file], reload_only = true)
+    exec::Run(host=host, command="/usr/bin/mysql_create_db", requires=[dblist, script_file, svc], reload_only=true)
 end
 
 implementation sysvCreate for MysqlServer:
-    mysqld_config = std::ConfigFile(host = host, path = "/etc/sysconfig/mysqld", content = std::file("mysql/mysqld_sysconfig"))
-    script_file = std::File(host = host, path = "/usr/bin/mysql_create_db", owner = "root", group = "root",
-        mode = 755, content = std::file("mysql/redhat_mysql_create_db"))
+    mysqld_config=std::ConfigFile(host=host, path="/etc/sysconfig/mysqld", content=std::file("mysql/mysqld_sysconfig"))
+    script_file=std::File(host=host, path="/usr/bin/mysql_create_db", owner="root", group="root",
+        mode=755, content=std::file("mysql/redhat_mysql_create_db"))
 end
 
 implementation ubuntuMysql for MysqlServer:
     # install mysql server
-    pkg = std::Package(host = host, name = "mysql-server", state = "installed")
-    svc = std::Service(host = host, name = "mysql", state = "running", onboot = true)
-    svc.requires = [pkg, config, conf_dir]
+    pkg=std::Package(host=host, name="mysql-server", state="installed")
+    svc=std::Service(host=host, name="mysql", state="running", onboot=true)
+    svc.requires=[pkg, config, conf_dir]
 
-    config = std::ConfigFile(host = host, path = "/etc/mysql/my.cnf", content = std::template("mysql/my.cnf.ubuntu.tmpl"), requires = pkg, reload = true)
-    conf_dir = std::Directory(host = host, path = "/etc/mysql/conf.d", owner = "root", group = "root", mode = 755)
+    config=std::ConfigFile(host=host, path="/etc/mysql/my.cnf", content=std::template("mysql/my.cnf.ubuntu.tmpl"), requires=pkg, reload=true)
+    conf_dir=std::Directory(host=host, path="/etc/mysql/conf.d", owner="root", group="root", mode=755)
 
-    dblist = std::ConfigFile(host = host, path = "/etc/mysql/databases", reload = true,
-        content = std::template("mysql/databases.tmpl"))
+    dblist=std::ConfigFile(host=host, path="/etc/mysql/databases", reload=true,
+        content=std::template("mysql/databases.tmpl"))
 
-    script_file = std::File(host = host, path = "/usr/bin/mysql_create_db", owner = "root", group = "root",
-        mode = 755, content = std::file("mysql/ubuntu_mysql_create_db"))
+    script_file=std::File(host=host, path="/usr/bin/mysql_create_db", owner="root", group="root",
+        mode=755, content=std::file("mysql/ubuntu_mysql_create_db"))
 
-    exec::Run(host = host, command = "/usr/bin/mysql_create_db", requires = [dblist, script_file], reload_only = true)
+    exec::Run(host=host, command="/usr/bin/mysql_create_db", requires=[dblist, script_file], reload_only=true)
 end
