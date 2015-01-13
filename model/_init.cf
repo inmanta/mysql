@@ -88,7 +88,7 @@ implementation ubuntuMysql for MysqlServer:
     config=std::ConfigFile(host=host, path="/etc/mysql/my.cnf", content=std::template("mysql/my.cnf.ubuntu.tmpl"), requires=pkg, reload=true)
     conf_dir=std::Directory(host=host, path="/etc/mysql/conf.d", owner="root", group="root", mode=755)
 
-    dblist=std::ConfigFile(host=host, path="/etc/mysql/databases", reload=true,
+    dblist=std::ConfigFile(host=host, path="/etc/mysql/databases", reload=true, requires=pkg,
         content=std::template("mysql/databases.tmpl"))
 
     script_file=std::File(host=host, path="/usr/bin/mysql_create_db", owner="root", group="root",

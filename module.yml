@@ -4,4 +4,4 @@ name: mysql
 requires: {exec: 'git@github.com:bartv/imp-exec, ">= 0.1"', ip: 'git@github.com:bartv/imp-ip,
     ">= 0.1"', std: 'git@github.com:bartv/imp-std, ">= 0.3"'}
 source: git@github.com:bartv/imp-mysql
-version: 0.2.6
+version: 0.2.7
