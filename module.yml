@@ -2,7 +2,7 @@ author: Bart Vanbrabant <bart@impera.io>
 license: Apache 2.0
 name: mysql
 source: git@github.com:impera-io/mysql
-version: 0.2.8
+version: 0.2.9
 requires:
     exec: git@github.com:impera-io/exec, ">= 0.1"
     ip: git@github.com:impera-io/ip, ">= 0.1"
