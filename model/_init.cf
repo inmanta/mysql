@@ -70,7 +70,7 @@ implementation mysqlMariaDB for MysqlServer:
     script_file=std::File(host=host, path="/usr/bin/mysql_create_db", owner="root", group="root",
         mode=755, content=std::file("mysql/redhat_mysql_create_db"))
 
-    exec::Run(host=host, command="/usr/bin/mysql_create_db", requires=[dblist, script_file, svc], reload_only=true)
+    exec::Run(host=host, command="/usr/bin/mysql_create_db", requires=[dblist, script_file, svc])
 end
 
 implementation sysvCreate for MysqlServer:
