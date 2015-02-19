@@ -1,9 +1,9 @@
 author: Bart Vanbrabant <bart@impera.io>
 license: Apache 2.0
 name: mysql
-source: git@github.com:impera-io/mysql
-version: 0.2.10
+source: git@git.impera.io:modules/mysql
+version: 0.2.11
 requires:
-    exec: git@github.com:impera-io/exec, ">= 0.1"
-    ip: git@github.com:impera-io/ip, ">= 0.1"
-    std: git@github.com:impera-io/std, ">= 0.3"
+    exec: git@git.impera.io:modules/exec, ">= 0.1"
+    ip: git@git.impera.io:modules/ip, ">= 0.1"
+    std: git@git.impera.io:modules/std, ">= 0.3"
