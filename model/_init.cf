@@ -57,7 +57,7 @@ end
 
 implementation mysqlMariaDB for MysqlServer:
     # install mysql server
-    pkg=std::Package(host=host, name="mariadb-galera-server", state="installed")
+    pkg=std::Package(host=host, name="mariadb-server", state="installed")
     svc=std::Service(host=host, name="mariadb", state="running", onboot=true)
     svc.requires=[pkg, config, conf_dir]
 
