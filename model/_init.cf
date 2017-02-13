@@ -33,7 +33,7 @@ end
 
 implementation dBDependsOnServer for Database:
     #DB creation script is in Server
-    self.requires = server
+    server.provides = self.provides
 end
 
 implement Database using dBDependsOnServer
@@ -78,7 +78,7 @@ implementation mysqlMariaDB for MysqlServer:
         mode=755, content=std::file("mysql/redhat_mysql_create_db"))
 
     exec = exec::Run(host=host, command="/usr/bin/mysql_create_db", requires=[dblist, script_file, svc])
-    self.requires = exec
+    exec.provides = self.provides
 end
 
 implementation sysvCreate for MysqlServer:
@@ -103,5 +103,5 @@ implementation ubuntuMysql for MysqlServer:
         mode=755, content=std::file("mysql/ubuntu_mysql_create_db"))
 
     exec = exec::Run(host=host, command="/usr/bin/mysql_create_db", requires=[dblist, script_file], reload_only=true)
-    self.requires = exec
+    exec.provides = self.provides
 end
