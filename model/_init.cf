@@ -20,10 +20,13 @@ import ip
 import ip::services
 
 entity DBMS:
-    # reference to host, e.g. ip or hostname
+    """
+        A DB management system (a service on a machina, DBaaS, ...)
+
+        :attr hostref: reference to host, e.g. ip or hostname
+    """
     string hostref
-    
-    ip::port port = 3306
+    ip::port port=3306
 end
 
 entity ManagedMysql extends DBMS:
@@ -88,7 +91,7 @@ implementation mysqlRedhat for MysqlServer:
                              content=std::template("mysql/databases.tmpl"))
                              
    self.hostref = host.ip
-   self.port=3306
+   self.port = 3306
 end
 
 implementation mysqlMariaDB for MysqlServer:
@@ -109,7 +112,7 @@ implementation mysqlMariaDB for MysqlServer:
     exec = exec::Run(host=host, command="/usr/bin/mysql_create_db", requires=[dblist, script_file, svc])
     exec.provides = self.provides
    self.hostref = host.ip
-   self.port=3306
+   self.port = 3306
 end
 
 implementation sysvCreate for MysqlServer:
@@ -136,6 +139,6 @@ implementation ubuntuMysql for MysqlServer:
 
     exec = exec::Run(host=host, command="/usr/bin/mysql_create_db", requires=[dblist, script_file], reload_only=true)
     exec.provides = self.provides
-   self.hostref = host.ip
-   self.port=3306
+    self.hostref = host.ip
+    self.port = 3306
 end
