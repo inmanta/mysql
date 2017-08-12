@@ -19,7 +19,24 @@ import exec
 import ip
 import ip::services
 
-entity MysqlServer extends ip::services::Server:
+entity DBMS:
+    """
+        A DB management system (a service on a machina, DBaaS, ...)
+
+        :attr hostref: reference to host, e.g. ip or hostname
+    """
+    string hostref
+    ip::port port=3306
+end
+
+entity ManagedMysql extends DBMS:
+    string user
+    string password
+end
+
+ManagedMysql.agenthost [1] -- ip::Host
+
+entity MysqlServer extends ip::services::Server, DBMS:
     """
         Mysql server configuration
     """
@@ -29,6 +46,8 @@ entity Database:
     string name
     string user
     string password
+    string encoding = "utf8"
+    string collation = "utf8-ci"
 end
 
 implementation dBDependsOnServer for Database:
@@ -38,12 +57,22 @@ end
 
 implement Database using dBDependsOnServer
 
-MysqlServer server [1] -- [0:] Database databases
+DBMS server [1] -- [0:] Database databases
 
 typedef Server as MysqlServer(services=mysql::s_server)
 
 mysql_server_range=ip::Port(low=3306)
 s_server=ip::DstService(proto="tcp", dst_range=mysql_server_range)
+
+implementation manageManaged for ManagedMysql:
+    tools = std::Package(host=agenthost, name="mysql", state="installed")
+    for db in databases:
+        exec::Run(host=agenthost, command="/usr/bin/mysql -u {{user}} -h {{hostref}} --password={{password}} -s -e \"create database IF NOT EXISTS {{db.name}} CHARACTER SET {{db.encoding}} COLLATE {{db.collation}}; grant all privileges on {{db.name}}.* to '{{db.user}}'@'%' identified by '{{db.password}}'; grant all privileges on {{db.name}}.* to '{{db.user}}'@'localhost' identified by '{{db.password}}';\" >/dev/null", requires=tools)
+    end
+end
+
+implement ManagedMysql using manageManaged
+
 
 implement MysqlServer using mysqlRedhat, sysvCreate when std::familyof(host.os, "rhel") and host.os.version <= 6
 implement MysqlServer using mysqlMariaDB when (std::familyof(host.os, "rhel") and host.os.version >= 7) or std::familyof(host.os, "fedora")
@@ -60,6 +89,9 @@ implementation mysqlRedhat for MysqlServer:
 
     dblist = std::ConfigFile(host=host, path="/etc/sysconfig/mysql", reload=true,
                              content=std::template("mysql/databases.tmpl"))
+                             
+   self.hostref = host.ip
+   self.port = 3306
 end
 
 implementation mysqlMariaDB for MysqlServer:
@@ -79,6 +111,8 @@ implementation mysqlMariaDB for MysqlServer:
 
     exec = exec::Run(host=host, command="/usr/bin/mysql_create_db", requires=[dblist, script_file, svc])
     exec.provides = self.provides
+   self.hostref = host.ip
+   self.port = 3306
 end
 
 implementation sysvCreate for MysqlServer:
@@ -105,4 +139,6 @@ implementation ubuntuMysql for MysqlServer:
 
     exec = exec::Run(host=host, command="/usr/bin/mysql_create_db", requires=[dblist, script_file], reload_only=true)
     exec.provides = self.provides
+    self.hostref = host.ip
+    self.port = 3306
 end
