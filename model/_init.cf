@@ -36,7 +36,7 @@ end
 
 ManagedMysql.agenthost [1] -- ip::Host
 
-entity MysqlServer extends ip::services::Server, DBMS:
+entity Server extends ip::services::Server, DBMS:
     """
         Mysql server configuration
     """
@@ -57,12 +57,7 @@ end
 
 implement Database using dBDependsOnServer
 
-DBMS server [1] -- [0:] Database databases
-
-typedef Server as MysqlServer(services=mysql::s_server)
-
-mysql_server_range=ip::Port(low=3306)
-s_server=ip::DstService(proto="tcp", dst_range=mysql_server_range)
+DBMS.databases [0:] -- Database.server [1]
 
 implementation manageManaged for ManagedMysql:
     tools = std::Package(host=agenthost, name="mysql", state="installed")
@@ -73,32 +68,40 @@ end
 
 implement ManagedMysql using manageManaged
 
+implement Server using ports
+implement Server using mysqlRedhat when std::familyof(host.os, "rhel") and host.os.version <= 6
+implement Server using mysqlMariaDB when (std::familyof(host.os, "rhel") and host.os.version >= 7) or std::familyof(host.os, "fedora")
+implement Server using ubuntuMysql when std::familyof(host.os, "ubuntu")
 
-implement MysqlServer using mysqlRedhat, sysvCreate when std::familyof(host.os, "rhel") and host.os.version <= 6
-implement MysqlServer using mysqlMariaDB when (std::familyof(host.os, "rhel") and host.os.version >= 7) or std::familyof(host.os, "fedora")
-implement MysqlServer using ubuntuMysql when std::familyof(host.os, "ubuntu")
+implementation ports for Server:
+    self.services=ip::DstService(proto="tcp", dst_range=ip::Port(low=3306))
+end
 
-implementation mysqlRedhat for MysqlServer:
+implementation mysqlRedhat for Server:
     # install mysql server
-    pkg = std::Package(host=host, name="mysql-server", state="installed")
-    svc = std::Service(host=host, name="mysqld", state="running", onboot=true)
-    svc.requires = [pkg, config, conf_dir]
+    pkg = std::Package(host=host, name="mysql-server", state="installed", requires=self.requires)
+    svc = std::Service(host=host, name="mysqld", state="running", onboot=true, requires = [pkg, config, conf_dir])
 
     config = std::ConfigFile(host=host, path="/etc/my.cnf", content=std::template("mysql/my.cnf.tmpl"), requires=pkg, reload=true)
     conf_dir = std::Directory(host=host, path="/etc/mysql.conf.d", owner="root", group="root", mode=755)
 
     dblist = std::ConfigFile(host=host, path="/etc/sysconfig/mysql", reload=true,
                              content=std::template("mysql/databases.tmpl"))
-                             
-   self.hostref = host.ip
-   self.port = 3306
+
+    mysqld_config = std::ConfigFile(host=host, path="/etc/sysconfig/mysqld", content=std::file("mysql/mysqld_sysconfig"))
+    script_file = std::File(host=host, path="/usr/bin/mysql_create_db", owner="root", group="root",
+                            mode=755, content=std::file("mysql/redhat_mysql_create_db"))
+    exec = exec::Run(host=host, command="/usr/bin/mysql_create_db", requires=[dblist, script_file, svc])
+    exec.provides = self.provides
+
+    self.hostref = host.ip
+    self.port = 3306
 end
 
-implementation mysqlMariaDB for MysqlServer:
+implementation mysqlMariaDB for Server:
     # install mysql server
-    pkg = std::Package(host=host, name="mariadb-server", state="installed")
-    svc = std::Service(host=host, name="mariadb", state="running", onboot=true)
-    svc.requires = [pkg, config, conf_dir]
+    pkg = std::Package(host=host, name="mariadb-server", state="installed", requires=self.requires)
+    svc = std::Service(host=host, name="mariadb", state="running", onboot=true, requires=[pkg, config, conf_dir])
 
     config = std::ConfigFile(host=host, path="/etc/my.cnf", content=std::template("mysql/mariadb.cnf.tmpl"), requires=pkg, reload=true)
     conf_dir = std::Directory(host=host, path="/etc/my.cnf.d", owner="root", group="root", mode=755)
@@ -111,21 +114,15 @@ implementation mysqlMariaDB for MysqlServer:
 
     exec = exec::Run(host=host, command="/usr/bin/mysql_create_db", requires=[dblist, script_file, svc])
     exec.provides = self.provides
-   self.hostref = host.ip
-   self.port = 3306
+
+    self.hostref = host.ip
+    self.port = 3306
 end
 
-implementation sysvCreate for MysqlServer:
-    mysqld_config = std::ConfigFile(host=host, path="/etc/sysconfig/mysqld", content=std::file("mysql/mysqld_sysconfig"))
-    script_file = std::File(host=host, path="/usr/bin/mysql_create_db", owner="root", group="root",
-                            mode=755, content=std::file("mysql/redhat_mysql_create_db"))
-end
-
-implementation ubuntuMysql for MysqlServer:
+implementation ubuntuMysql for Server:
     # install mysql server
-    pkg = std::Package(host=host, name="mysql-server", state="installed")
-    svc = std::Service(host=host, name="mysql", state="running", onboot=true)
-    svc.requires = [pkg, config, conf_dir]
+    pkg = std::Package(host=host, name="mysql-server", state="installed", requires=self.requires)
+    svc = std::Service(host=host, name="mysql", state="running", onboot=true, requires=[pkg, config, conf_dir])
 
     config = std::ConfigFile(host=host, path="/etc/mysql/my.cnf", content=std::template("mysql/my.cnf.ubuntu.tmpl"),
                              requires=pkg, reload=true)
@@ -139,6 +136,7 @@ implementation ubuntuMysql for MysqlServer:
 
     exec = exec::Run(host=host, command="/usr/bin/mysql_create_db", requires=[dblist, script_file], reload_only=true)
     exec.provides = self.provides
+
     self.hostref = host.ip
     self.port = 3306
 end
