@@ -47,7 +47,7 @@ entity Database:
     string user
     string password
     string encoding = "utf8"
-    string collation = "utf8-ci"
+    string collation = "utf8_general_ci"
 end
 
 implementation dBDependsOnServer for Database:
