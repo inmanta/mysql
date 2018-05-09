@@ -56,17 +56,17 @@ implementation dBDependsOnServer for Database:
 end
 
 implement Database using dBDependsOnServer
+implement Database using create when std::is_instance(server,"mysql::ManagedMysql")
 
 DBMS.databases [0:] -- Database.server [1]
 
-implementation manageManaged for ManagedMysql:
-    tools = std::Package(host=agenthost, name="mysql", state="installed")
-    for db in databases:
-        exec::Run(host=agenthost, command="/usr/bin/mysql -u {{user}} -h {{hostref}} --password={{password}} -s -e \"create database IF NOT EXISTS {{db.name}} CHARACTER SET {{db.encoding}} COLLATE {{db.collation}}; grant all privileges on {{db.name}}.* to '{{db.user}}'@'%' identified by '{{db.password}}'; grant all privileges on {{db.name}}.* to '{{db.user}}'@'localhost' identified by '{{db.password}}';\" >/dev/null", requires=tools)
-    end
+implementation create for Database:
+    tools = std::Package(host=server.agenthost, name="mysql", state="installed")
+    db=self
+    exec::Run(host=server.agenthost, command="/usr/bin/mysql -u {{server.user}} -h {{server.hostref}} --password={{server.password}} -s -e \"create database IF NOT EXISTS {{db.name}} CHARACTER SET {{db.encoding}} COLLATE {{db.collation}}; grant all privileges on {{db.name}}.* to '{{db.user}}'@'%' identified by '{{db.password}}'; grant all privileges on {{db.name}}.* to '{{db.user}}'@'localhost' identified by '{{db.password}}';\" >/dev/null", requires=tools)
 end
 
-implement ManagedMysql using manageManaged
+implement ManagedMysql using std::none
 
 implement Server using ports
 implement Server using mysqlRedhat when std::familyof(host.os, "rhel") and host.os.version <= 6

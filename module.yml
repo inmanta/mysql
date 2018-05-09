@@ -1,5 +1,5 @@
 author: Inmanta <code@inmanta.com>
 license: Apache 2.0
 name: mysql
-version: 0.5.3
+version: 0.6.0.dev1525864191
 compiler_version: 2017.2
