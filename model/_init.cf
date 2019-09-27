@@ -45,6 +45,9 @@ entity Server extends ip::services::Server, DBMS:
     bool remove_anon_users = false
 end
 
+# svc is required for remove_anon_users
+Server.svc [1] -- std::Service
+
 entity Database:
     string name
     string user
@@ -72,7 +75,7 @@ end
 implement ManagedMysql using manageManaged
 
 implementation removeAnonUsers for Server:
-    exec = exec::Run(host=host, command="/usr/bin/mysql -s -e \"delete from user where User = ''; flush privileges;\" mysql", requires=svc)
+    exec = exec::Run(host=host, command="/usr/bin/mysql -s -e \"delete from user where User = ''; flush privileges;\" mysql", requires=self.svc)
     exec.provides = self.provides
 end
 
@@ -90,7 +93,7 @@ end
 implementation mysqlRedhat for Server:
     # install mysql server
     pkg = std::Package(host=host, name="mysql-server", state="installed", requires=self.requires)
-    svc = std::Service(host=host, name="mysqld", state="running", onboot=true, requires = [pkg, config, conf_dir])
+    self.svc = std::Service(host=host, name="mysqld", state="running", onboot=true, requires = [pkg, config, conf_dir])
 
     config = std::ConfigFile(host=host, path="/etc/my.cnf", content=std::template("mysql/my.cnf.tmpl"), requires=pkg, reload=true)
     conf_dir = std::Directory(host=host, path="/etc/mysql.conf.d", owner="root", group="root", mode=755)
@@ -101,7 +104,7 @@ implementation mysqlRedhat for Server:
     mysqld_config = std::ConfigFile(host=host, path="/etc/sysconfig/mysqld", content=std::file("mysql/mysqld_sysconfig"))
     script_file = std::File(host=host, path="/usr/bin/mysql_create_db", owner="root", group="root",
                             mode=755, content=std::file("mysql/redhat_mysql_create_db"))
-    exec = exec::Run(host=host, command="/usr/bin/mysql_create_db", requires=[dblist, script_file, svc])
+    exec = exec::Run(host=host, command="/usr/bin/mysql_create_db", requires=[dblist, script_file, self.svc])
     exec.provides = self.provides
 
     self.hostref = host.ip
@@ -111,7 +114,7 @@ end
 implementation mysqlMariaDB for Server:
     # install mysql server
     pkg = std::Package(host=host, name="mariadb-server", state="installed", requires=self.requires)
-    svc = std::Service(host=host, name="mariadb", state="running", onboot=true, requires=[pkg, config, conf_dir])
+    self.svc = std::Service(host=host, name="mariadb", state="running", onboot=true, requires=[pkg, config, conf_dir])
 
     config = std::ConfigFile(host=host, path="/etc/my.cnf", content=std::template("mysql/mariadb.cnf.tmpl"), requires=pkg, reload=true)
     conf_dir = std::Directory(host=host, path="/etc/my.cnf.d", owner="root", group="root", mode=755)
@@ -122,7 +125,7 @@ implementation mysqlMariaDB for Server:
     script_file = std::File(host=host, path="/usr/bin/mysql_create_db", owner="root", group="root",
                             mode=755, content=std::file("mysql/redhat_mysql_create_db"))
 
-    exec = exec::Run(host=host, command="/usr/bin/mysql_create_db", requires=[dblist, script_file, svc])
+    exec = exec::Run(host=host, command="/usr/bin/mysql_create_db", requires=[dblist, script_file, self.svc])
     exec.provides = self.provides
 
     self.hostref = host.ip
@@ -132,7 +135,7 @@ end
 implementation ubuntuMysql for Server:
     # install mysql server
     pkg = std::Package(host=host, name="mysql-server", state="installed", requires=self.requires)
-    svc = std::Service(host=host, name="mysql", state="running", onboot=true, requires=[pkg, config, conf_dir])
+    self.svc = std::Service(host=host, name="mysql", state="running", onboot=true, requires=[pkg, config, conf_dir])
 
     config = std::ConfigFile(host=host, path="/etc/mysql/my.cnf", content=std::template("mysql/my.cnf.ubuntu.tmpl"),
                              requires=pkg, reload=true)
