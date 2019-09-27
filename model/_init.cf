@@ -39,6 +39,8 @@ ManagedMysql.agenthost [1] -- ip::Host
 entity Server extends ip::services::Server, DBMS:
     """
         Mysql server configuration
+
+        :attr remove_anon_users: Required when trying to connect to a mysql database on the same host over it' external IP.
     """
     bool remove_anon_users = false
 end
@@ -70,7 +72,8 @@ end
 implement ManagedMysql using manageManaged
 
 implementation removeAnonUsers for Server:
-    exec::Run(host=host, command="/usr/bin/mysql -s -e \"delete from user where User = ''; flush privileges;\" mysql")
+    exec = exec::Run(host=host, command="/usr/bin/mysql -s -e \"delete from user where User = ''; flush privileges;\" mysql", requires=svc)
+    exec.provides = self.provides
 end
 
 implement Server using removeAnonUsers when remove_anon_users == true
