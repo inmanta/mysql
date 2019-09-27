@@ -48,6 +48,7 @@ entity Database:
     string password
     string encoding = "utf8"
     string collation = "utf8_general_ci"
+    bool remove_anon_users = false
 end
 
 implementation dBDependsOnServer for Database:
@@ -67,6 +68,12 @@ implementation manageManaged for ManagedMysql:
 end
 
 implement ManagedMysql using manageManaged
+
+implementation removeAnonUsers for ManagedMysql:
+    exec::Run(host=agenthost, command="/usr/bin/mysql -u {{user}} -h {{hostref}} --password={{password}} -s -e \"delete from user where User = ''; flush privileges;\" >/dev/null")
+end
+
+implement ManagedMysql using removeAnonUsers when self.remove_anon_users == true
 
 implement Server using ports
 implement Server using mysqlRedhat when std::familyof(host.os, "rhel") and host.os.version <= 6
